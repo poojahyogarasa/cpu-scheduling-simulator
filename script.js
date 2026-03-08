@@ -5,6 +5,14 @@ let wtChartInstance=null;
 let tatChartInstance=null;
 let rtChartInstance=null;
 
+/* HIDE CHARTS INITIALLY */
+
+window.onload=()=>{
+document.getElementById("wtChart").style.display="none";
+document.getElementById("tatChart").style.display="none";
+document.getElementById("rtChart").style.display="none";
+}
+
 /* TABLE */
 
 function renderTable(){
@@ -60,7 +68,6 @@ function addProcess(){
 
 let arrivalVal=parseInt(arrival.value);
 let burstVal=parseInt(burst.value);
-
 let prVal=priority.value==""?null:parseInt(priority.value);
 
 if(isNaN(arrivalVal)||isNaN(burstVal)){
@@ -70,7 +77,12 @@ return;
 
 let pid="P"+(processes.length+1);
 
-processes.push({pid,arrival:arrivalVal,burst:burstVal,priority:prVal});
+processes.push({
+pid,
+arrival:arrivalVal,
+burst:burstVal,
+priority:prVal
+});
 
 clearForm();
 renderTable();
@@ -107,7 +119,7 @@ renderTable();
 
 }
 
-/* CLEAR */
+/* CLEAR FORM */
 
 function clearForm(){
 
@@ -122,7 +134,7 @@ selectedIndex=null;
 
 }
 
-/* TOGGLE */
+/* TOGGLE FIELDS */
 
 function toggleFields(){
 
@@ -414,6 +426,46 @@ avgRT:totalRT/data.length
 
 }
 
+/* PROCESS TABLE RESULTS */
+
+function processResultTable(schedule,data){
+
+let completion={}, firstExec={};
+
+schedule.forEach(t=>{
+if(!firstExec[t.pid]) firstExec[t.pid]=t.start;
+completion[t.pid]=t.end;
+});
+
+let html="<table>";
+html+="<tr><th>PID</th><th>Arrival</th><th>Completion</th><th>WT</th><th>TAT</th><th>RT</th></tr>";
+
+data.forEach(p=>{
+
+let ct=completion[p.pid];
+let tat=ct-p.arrival;
+let wt=tat-p.burst;
+let rt=firstExec[p.pid]-p.arrival;
+
+html+=`
+<tr>
+<td>${p.pid}</td>
+<td>${p.arrival}</td>
+<td>${ct}</td>
+<td>${wt}</td>
+<td>${tat}</td>
+<td>${rt}</td>
+</tr>
+`;
+
+});
+
+html+="</table>";
+
+return html;
+
+}
+
 /* RUN SINGLE */
 
 function runSimulation(){
@@ -450,7 +502,9 @@ drawGantt(schedule);
 
 let m=calculateMetrics(schedule,data);
 
-results.innerHTML=`
+results.innerHTML=
+processResultTable(schedule,data)+
+`
 <h3>
 Average Waiting Time : ${m.avgWT.toFixed(2)}<br>
 Average Turnaround Time : ${m.avgTAT.toFixed(2)}<br>
@@ -469,12 +523,9 @@ alert("Add processes first");
 return;
 }
 
-processes.forEach(p=>{
-if(p.priority===null){
-let pr=parseInt(prompt(`Enter priority for ${p.pid}`));
-if(!isNaN(pr)) p.priority=pr;
-}
-});
+document.getElementById("wtChart").style.display="block";
+document.getElementById("tatChart").style.display="block";
+document.getElementById("rtChart").style.display="block";
 
 let q=parseInt(quantum.value);
 if(isNaN(q)) q=parseInt(prompt("Enter Quantum Time for Round Robin"));
@@ -505,10 +556,7 @@ resultsData.sort((a,b)=>a.avgWT-b.avgWT);
 
 let best=resultsData[0].name;
 
-/* TABLE */
-
 let html="<table>";
-
 html+="<tr><th>Algorithm</th><th>WT</th><th>TAT</th><th>RT</th></tr>";
 
 resultsData.forEach((r,i)=>{
@@ -528,7 +576,8 @@ html+=`
 
 html+="</table>";
 
-results.innerHTML=`
+results.innerHTML=
+`
 <h2 style="color:#00ffcc;">Best Algorithm</h2>
 <h1 style="color:#00ffcc;">${best}</h1>
 `+html;
